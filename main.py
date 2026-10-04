@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Import custom module (Requirement d)
+# Import custom module
 import vehicle_module as vm
 
 # Page Configuration
@@ -18,6 +18,10 @@ st.set_page_config(
     page_title="AutoCare Service Centre Management",
     layout="wide"
 )
+
+# Initialize Session State for Dynamic Linking
+if "registered_vehicles" not in st.session_state:
+    st.session_state.registered_vehicles = []
 
 # Service Catalog Definition
 SERVICE_CATALOG = {
@@ -110,6 +114,16 @@ with tab1:
                 total_charge=final_total
             )
 
+            # Store in Session State (Linking Tab 1 to Tab 2)
+            st.session_state.registered_vehicles.append({
+                "Customer": owner_name.strip(),
+                "Plate": plate_number.strip().upper(),
+                "Type": vehicle_type,
+                "Class": "Premium" if is_premium else "Standard",
+                "Services_Count": len(selected_services),
+                "Total_Charge_RM": final_total
+            })
+
             # Display Successful Invoice Output
             st.success("Service Registration & Invoice Generated Successfully.")
             st.subheader("Invoice Summary")
@@ -136,12 +150,22 @@ with tab1:
             st.error(f"Unexpected Error Occurred: {e}")
 
 # ==============================================================================
-# TAB 2: Matrix Processing & Data Analysis (NumPy, Pandas, Matplotlib)
+# TAB 2: Matrix Processing & Data Analytics
 # ==============================================================================
 with tab2:
     st.header("Service Center Analytics & Matrix Operations")
     
-    # Generate Synthetic Dataset for Analysis
+    # Display Linked Session Entries from Tab 1
+    st.subheader("1. Live Registered Vehicles (Linked Session Data)")
+    if st.session_state.registered_vehicles:
+        live_df = pd.DataFrame(st.session_state.registered_vehicles)
+        st.dataframe(live_df, use_container_width=True)
+    else:
+        st.info("No live vehicles registered in Tab 1 yet. Register a vehicle in 'Service Registration & Billing' to see live session records here.")
+    
+    st.divider()
+
+    # Pre-populated Matrix Dataset for Full Analysis
     data = {
         "Service_ID": [f"SRV-{1001+i}" for i in range(10)],
         "Service_Name": [
@@ -157,7 +181,7 @@ with tab2:
     
     df = pd.DataFrame(data)
     
-    st.subheader("1. Pandas DataFrame Overview")
+    st.subheader("2. Pandas DataFrame Overview (Service Catalog Dataset)")
     st.dataframe(df, use_container_width=True)
     
     # DataFrame & NumPy Array Attributes
@@ -180,7 +204,7 @@ with tab2:
     st.divider()
     
     # Indexing & Slicing
-    st.subheader("2. Indexing & Slicing Operations")
+    st.subheader("3. Indexing & Slicing Operations")
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         st.markdown("**Slicing DataFrame (First 5 Rows, Selected Columns):**")
@@ -192,7 +216,7 @@ with tab2:
     st.divider()
     
     # Mathematical Analysis using NumPy
-    st.subheader("3. Mathematical Analysis on Service Charges")
+    st.subheader("4. Mathematical Analysis on Service Charges")
     
     # Vectorized Math Calculations
     total_revenue_per_service = price_array * np.array(df["Jobs_Completed"])
@@ -207,7 +231,7 @@ with tab2:
     st.divider()
     
     # Filtering & Sorting
-    st.subheader("4. Data Filtering & Sorting")
+    st.subheader("5. Data Filtering & Sorting")
     filter_price = st.slider("Filter Services with Price > RM", min_value=30, max_value=250, value=100)
     filtered_df = df[df["Base_Price_RM"] > filter_price].sort_values(by="Base_Price_RM", ascending=False)
     st.dataframe(filtered_df, use_container_width=True)
@@ -215,7 +239,7 @@ with tab2:
     st.divider()
     
     # Matplotlib Graph Visualization
-    st.subheader("5. Graphical Visualization (Matplotlib)")
+    st.subheader("6. Graphical Visualization (Matplotlib)")
     
     fig, ax = plt.subplots(figsize=(10, 5))
     bars = ax.bar(df["Service_Name"], df["Total_Revenue_RM"], color="#2b5c8f", edgecolor="#1a3754")
@@ -226,7 +250,6 @@ with tab2:
     plt.xticks(rotation=45, ha="right")
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     
-    # Annotate bars
     for bar in bars:
         height = bar.get_height()
         ax.annotate(f'RM{height:.0f}',
